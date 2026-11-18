@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import LoginForm from '@/features/auth/LoginForm.vue'
 import { getToken, useAuth } from '@/features/auth/useAuth'
 import { DraftsPanel, createDraftsApi } from '@/features/drafts'
+import { CanvasEditor } from '@/features/canvas-editor'
 import { Button } from '@/components/ui/button'
 import { PostUploader, createApi, createUploadSocket, localUploadStorage, type UploaderDeps } from '@/features/post-upload'
 
@@ -19,17 +20,18 @@ const deps: UploaderDeps = {
 
 const draftPostId = ref<string | null>(null)
 const draftsApi = createDraftsApi(API_URL, getToken, auth.logout)
-const tab = ref<'create' | 'drafts'>('create')
+const tab = ref<'create' | 'drafts' | 'editor'>('create')
 </script>
 
 <template>
   <main class="p-6">
     <LoginForm v-if="!auth.token.value" :submit="auth.verifyOtp" />
     <template v-else>
-      <div class="mx-auto mb-4 flex max-w-xl justify-between">
+      <div :class="['mx-auto mb-4 flex justify-between', tab === 'editor' ? 'max-w-none' : 'max-w-xl']">
         <div class="flex gap-2">
           <Button :variant="tab === 'create' ? 'default' : 'outline'" size="sm" @click="tab = 'create'">Create</Button>
           <Button :variant="tab === 'drafts' ? 'default' : 'outline'" size="sm" @click="tab = 'drafts'">Drafts</Button>
+          <Button :variant="tab === 'editor' ? 'default' : 'outline'" size="sm" @click="tab = 'editor'">Editor</Button>
         </div>
         <Button variant="outline" size="sm" @click="auth.logout">Log out</Button>
       </div>
@@ -41,6 +43,7 @@ const tab = ref<'create' | 'drafts'>('create')
         </p>
       </div>
       <DraftsPanel v-if="tab === 'drafts'" :api="draftsApi" />
+      <div v-if="tab === 'editor'" class="h-[calc(100vh-7rem)]"><CanvasEditor /></div>
     </template>
   </main>
 </template>

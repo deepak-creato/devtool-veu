@@ -1,0 +1,5 @@
+export { default as CanvasEditor } from './CanvasEditor.vue'
+export { useCanvasEditor, type CanvasEditor as CanvasEditorState } from './useCanvasEditor'
+export { parseSceneV2, toSceneV2, SceneError } from './scene'
+export { sampleScene } from './samples'
+export * from './types'
