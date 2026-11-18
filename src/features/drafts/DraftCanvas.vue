@@ -6,7 +6,7 @@ import type { Draft } from './types'
 
 const props = defineProps<{ draft: DeepReadonly<Draft> }>()
 
-const editor = computed(() => parseEditorState(props.draft.editor_state))
+const editor = computed(() => parseEditorState(props.draft.editor_state, props.draft.editor_version))
 const url = (p: string) => cdnUrl(props.draft.cdn, p)
 const base = computed(() => parseCanvasBase(props.draft.canvas_background))
 const baseSrc = computed(() => {
@@ -17,7 +17,7 @@ const baseSrc = computed(() => {
 </script>
 
 <template>
-  <!-- container-type lets text size scale with the canvas width (cqw) -->
+  <!-- Layers are positioned in % of the canvas; container-type lets text size scale with its width (cqw) -->
   <div
     class="relative w-full max-w-sm overflow-hidden rounded-xl border"
     :style="{
@@ -34,19 +34,19 @@ const baseSrc = computed(() => {
         v-if="l.type === 'image'"
         :src="url(l.props.src)"
         :alt="l.name"
-        class="absolute"
+        class="absolute block"
         :style="{ ...layerBox(l, editor.canvas), objectFit: l.props.fit }"
       />
       <img
         v-else-if="l.type === 'element'"
         :src="url(l.props.src)"
         :alt="l.props.kind"
-        class="absolute object-contain"
+        class="absolute block object-contain"
         :style="layerBox(l, editor.canvas)"
       />
       <div
         v-else
-        class="absolute flex items-center leading-tight whitespace-pre-wrap"
+        class="absolute flex items-center leading-tight break-words whitespace-pre-wrap"
         :style="{
           ...layerBox(l, editor.canvas),
           color: safeColor(l.props.color),

@@ -32,6 +32,21 @@ describe('parseEditorState', () => {
   })
 })
 
+describe('parseEditorState version 2', () => {
+  const v2 = { canvas: { width: 1000, height: 2000 }, layers: [{ id: 'a', type: 'image', x: 0.1, y: 0.25, width: 0.5, height: 0.5, props: { src: 'x' } }] }
+  const box = (s: ReturnType<typeof parseEditorState>) => {
+    const { x, y, width, height } = s.layers[0]
+    return { x, y, width, height }
+  }
+  const px = { x: 100, y: 500, width: 500, height: 1000 }
+  it('scales fractional geometry when json version is 2', () =>
+    expect(box(parseEditorState(JSON.stringify({ ...v2, version: 2 })))).toEqual(px))
+  it('scales when draft editor_version is 2', () => expect(box(parseEditorState(JSON.stringify(v2), 2))).toEqual(px))
+  it('scales when every layer is within 0..1 and no version given', () =>
+    expect(box(parseEditorState(JSON.stringify(v2)))).toEqual(px))
+  it('leaves pixel documents alone', () => expect(parseEditorState(sample).layers[1].x).toBe(300))
+})
+
 describe('layout helpers', () => {
   it('layerBox gives canvas percentages and rotation', () => {
     const s = parseEditorState(sample)
@@ -54,5 +69,17 @@ describe('parseCanvasBase', () => {
     expect(parseCanvasBase('https://c/x.png')).toEqual({ kind: 'image', src: 'https://c/x.png' })
     for (const j of ['', null, undefined, 'javascript:alert(1)', 'data:text/html,x', '//evil/x.png'])
       expect(parseCanvasBase(j)).toEqual({ kind: 'color', color: '#000000' })
+  })
+})
+
+describe('draftToScene', () => {
+  it('maps layers to editor scene with absolute CDN urls', async () => {
+    const { draftToScene } = await import('./toScene')
+    const s = draftToScene({ cdn: 'https://cdn/', editor_state: sample, editor_version: 1, canvas_background: 'bg/a.webp' } as never)
+    expect(s.canvas).toMatchObject({ width: 1080, height: 1920, background: { type: 'image', src: 'https://cdn/bg/a.webp' } })
+    expect(s.layers.map((l) => l.type)).toEqual(['element', 'image', 'element', 'text'])
+    expect(s.layers[0]).toMatchObject({ type: 'element', props: { kind: 'sticker', src: 'https://cdn/a/f.png' } })
+    expect(s.layers[1]).toMatchObject({ x: 300, props: { src: 'https://cdn/a/i.webp', fit: 'cover' } })
+    expect(s.layers[3]).toMatchObject({ props: { fontFamily: 'Segoe Print', color: '#2b2118' } })
   })
 })

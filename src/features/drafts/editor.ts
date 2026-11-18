@@ -1,4 +1,8 @@
-/** editor_state is a JSON *string*. Layers paint in array order (first = bottom). Coordinates are canvas pixels. */
+/**
+ * editor_state is a JSON *string*. Layers paint in array order (first = bottom).
+ * Parsed coordinates are canvas pixels. Version 2 documents store x/y/width/height as
+ * fractions of the canvas width/height; those are scaled to pixels on parse.
+ */
 interface LayerBase {
   id: string
   name: string
@@ -34,7 +38,7 @@ const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite
 const str = (v: unknown, d = '') => (typeof v === 'string' ? v : d)
 
 /** Defensive parse: bad JSON, empty "{}" or unknown layer types never throw; they just yield fewer layers. */
-export function parseEditorState(raw: string | null | undefined): EditorState {
+export function parseEditorState(raw: string | null | undefined, version?: number): EditorState {
   let j: unknown
   try {
     j = raw ? JSON.parse(raw) : null
@@ -49,15 +53,21 @@ export function parseEditorState(raw: string | null | undefined): EditorState {
     if (w > 0 && h > 0) out.canvas = { width: w, height: h }
   }
   if (!Array.isArray(j.layers)) return out
+  const { width: W, height: H } = out.canvas
+  const unit = (l: unknown) =>
+    isObj(l) && ['x', 'y', 'width', 'height'].every((k) => Math.abs(num(l[k], 0)) <= 1)
+  const fractional = j.version === 2 || version === 2 || (j.layers.length > 0 && j.layers.every(unit))
+  const sx = fractional ? W : 1
+  const sy = fractional ? H : 1
   for (const l of j.layers) {
     if (!isObj(l) || !isObj(l.props)) continue
     const base = {
       id: str(l.id),
       name: str(l.name),
-      x: num(l.x, 0),
-      y: num(l.y, 0),
-      width: num(l.width, 0),
-      height: num(l.height, 0),
+      x: num(l.x, 0) * sx,
+      y: num(l.y, 0) * sy,
+      width: num(l.width, 0) * sx,
+      height: num(l.height, 0) * sy,
       rotation: num(l.rotation, 0),
       opacity: Math.min(1, Math.max(0, num(l.opacity, 1))),
     }

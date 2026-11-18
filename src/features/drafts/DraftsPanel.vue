@@ -6,10 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { cdnUrl, stillUrl } from './api'
 import DraftCanvas from './DraftCanvas.vue'
+import { draftToScene } from './toScene'
 import type { DraftsApi } from './types'
+import type { Scene } from '@/features/canvas-editor'
 import { useDrafts } from './useDrafts'
 
 const props = defineProps<{ api: DraftsApi }>()
+const emit = defineEmits<{ edit: [scene: Scene] }>()
 const d = useDrafts(props.api)
 const { state } = d
 defineExpose({ refresh: d.refresh })
@@ -33,7 +36,10 @@ const fmt = (iso: string) => new Date(iso).toLocaleString()
 
       <!-- detail -->
       <template v-if="state.selected">
-        <Button variant="outline" size="sm" class="self-start" @click="d.close()">Back to drafts</Button>
+        <div class="flex gap-2">
+          <Button variant="outline" size="sm" @click="d.close()">Back to drafts</Button>
+          <Button size="sm" @click="emit('edit', draftToScene(state.selected))">Open in editor</Button>
+        </div>
         <DraftCanvas :draft="state.selected" />
         <p class="text-muted-foreground text-xs">
           {{ state.selected.media.length }} media: {{ state.selected.media.map((m) => `${m.name} (${m.type})`).join(', ') }}
