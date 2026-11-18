@@ -23,6 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Env files (incl. .env.example — kept local only)
+# Env files (.env.example is committed as a template)
 .env
 .env.*
+!.env.example
