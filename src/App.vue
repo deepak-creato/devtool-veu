@@ -13,14 +13,22 @@ const auth = useAuth(API_URL)
 const WS_URL: string = import.meta.env.VITE_CREATO_WS_URL ?? 'http://localhost:3001'
 
 const deps: UploaderDeps = {
-  api: createApi(API_URL, getToken, auth.logout), // 401 -> back to login
+  api: createApi(API_URL, getToken, () => logout()), // 401 -> back to login
   socket: createUploadSocket(WS_URL, getToken),
   storage: localUploadStorage(),
 }
 
 const draftPostId = ref<string | null>(null)
-const draftsApi = createDraftsApi(API_URL, getToken, auth.logout)
 const tab = ref<'create' | 'drafts' | 'editor'>('create')
+// Logout also wipes in-memory app state, not just storage.
+function logout() {
+  auth.logout()
+  draftPostId.value = null
+  editorScene.value = undefined
+  editorKey.value = 0
+  tab.value = 'create'
+}
+const draftsApi = createDraftsApi(API_URL, getToken, logout)
 
 // Opening a draft remounts the editor with that scene.
 const editorScene = ref<Scene>()
@@ -42,7 +50,7 @@ function openInEditor(scene: Scene) {
           <Button :variant="tab === 'drafts' ? 'default' : 'outline'" size="sm" @click="tab = 'drafts'">Drafts</Button>
           <Button :variant="tab === 'editor' ? 'default' : 'outline'" size="sm" @click="tab = 'editor'">Editor</Button>
         </div>
-        <Button variant="outline" size="sm" @click="auth.logout">Log out</Button>
+        <Button variant="outline" size="sm" @click="logout">Log out</Button>
       </div>
       <div v-show="tab === 'create'">
         <PostUploader :deps="deps" @draft-ready="draftPostId = $event" />

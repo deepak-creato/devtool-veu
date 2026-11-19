@@ -48,6 +48,32 @@ function deviceId(): string {
   return id
 }
 
+/** Wipe every client-side cache. Keeps only device_id (stable device identity). */
+function clearAllCaches() {
+  const device = read(DEVICE_KEY)
+  try {
+    localStorage.clear()
+  } catch {
+    /* unavailable */
+  }
+  try {
+    sessionStorage.clear()
+  } catch {
+    /* unavailable */
+  }
+  if (device) write(DEVICE_KEY, device)
+  try {
+    void caches?.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k))))
+  } catch {
+    /* Cache API unavailable */
+  }
+  try {
+    void indexedDB?.databases?.().then((dbs) => dbs.forEach((d) => d.name && indexedDB.deleteDatabase(d.name)))
+  } catch {
+    /* IndexedDB unavailable */
+  }
+}
+
 const token = ref<string | null>(read(TOKEN_KEY))
 const accounts = ref<UserAccount[]>([])
 
@@ -74,8 +100,7 @@ export function useAuth(baseUrl: string) {
   function logout() {
     token.value = null
     accounts.value = []
-    write(TOKEN_KEY, null)
-    write(REFRESH_KEY, null)
+    clearAllCaches()
   }
 
   return { token: readonly(token), accounts: readonly(accounts), verifyOtp, logout }
