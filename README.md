@@ -10,7 +10,7 @@ Vue 3 (`<script setup>`, TypeScript), Vite, Tailwind CSS v4, shadcn-vue / reka-u
 
 - **Auth** (`src/features/auth`): OTP login. The token is stored for API calls, and a 401 logs the user out.
 - **Create** (`src/features/post-upload`): uploads media to S3 and tracks processing over a socket until a draft is ready.
-- **Drafts** (`src/features/drafts`): lists drafts from the API. A draft can be converted to a scene and opened in the editor.
+- **Drafts** (`src/features/drafts`): lists drafts from the API. A draft can be converted to a scene and opened in the editor. A draft opened in the editor can be saved back with **Save draft** (`PATCH /posts/drafts/:id`). With **Update thumbnail** on, the canvas is rendered to an image and uploaded to S3 through a presigned URL first, so it becomes the draft's thumbnail.
 - **Editor** (`src/features/canvas-editor`): canvas editor for scene version 2. It has layers, a properties panel, a background panel, an elements library, and scene JSON import/export.
 - **Uploader** (`src/features/uploader`): generic media uploader with hashing in a web worker.
 

@@ -7,12 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { cdnUrl, stillUrl } from './api'
 import DraftCanvas from './DraftCanvas.vue'
 import { draftToScene } from './toScene'
+import type { DraftRef } from './save'
 import type { DraftsApi } from './types'
 import type { Scene } from '@/features/canvas-editor'
 import { useDrafts } from './useDrafts'
 
 const props = defineProps<{ api: DraftsApi }>()
-const emit = defineEmits<{ edit: [scene: Scene] }>()
+const emit = defineEmits<{ edit: [scene: Scene, draft: DraftRef] }>()
 const d = useDrafts(props.api)
 const { state } = d
 defineExpose({ refresh: d.refresh })
@@ -38,7 +39,7 @@ const fmt = (iso: string) => new Date(iso).toLocaleString()
       <template v-if="state.selected">
         <div class="flex gap-2">
           <Button variant="outline" size="sm" @click="d.close()">Back to drafts</Button>
-          <Button size="sm" @click="emit('edit', draftToScene(state.selected))">Open in editor</Button>
+          <Button size="sm" @click="emit('edit', draftToScene(state.selected), { draft_id: state.selected.draft_id, cdn: state.selected.cdn })">Open in editor</Button>
         </div>
         <DraftCanvas :draft="state.selected" />
         <p class="text-muted-foreground text-xs">

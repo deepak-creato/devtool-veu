@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import LoginForm from '@/features/auth/LoginForm.vue'
 import { getToken, useAuth } from '@/features/auth/useAuth'
-import { DraftsPanel, createDraftsApi } from '@/features/drafts'
+import { DraftsPanel, SaveDraftButton, createDraftsApi, type DraftRef } from '@/features/drafts'
 import { CanvasEditor, type Scene } from '@/features/canvas-editor'
 import { Button } from '@/components/ui/button'
 import { PostUploader, createApi, createUploadSocket, localUploadStorage, type UploaderDeps } from '@/features/post-upload'
@@ -25,6 +25,7 @@ function logout() {
   auth.logout()
   draftPostId.value = null
   editorScene.value = undefined
+  editorDraft.value = undefined
   editorKey.value = 0
   tab.value = 'create'
 }
@@ -32,9 +33,12 @@ const draftsApi = createDraftsApi(API_URL, getToken, logout)
 
 // Opening a draft remounts the editor with that scene.
 const editorScene = ref<Scene>()
+// The draft the editor scene came from; enables Save draft.
+const editorDraft = ref<DraftRef>()
 const editorKey = ref(0)
-function openInEditor(scene: Scene) {
+function openInEditor(scene: Scene, draft: DraftRef) {
   editorScene.value = scene
+  editorDraft.value = draft
   editorKey.value++
   tab.value = 'editor'
 }
@@ -60,7 +64,13 @@ function openInEditor(scene: Scene) {
         </p>
       </div>
       <DraftsPanel v-if="tab === 'drafts'" :api="draftsApi" @edit="openInEditor" />
-      <div v-if="tab === 'editor'" class="h-[calc(100vh-7rem)]"><CanvasEditor :key="editorKey" :initial="editorScene" /></div>
+      <div v-if="tab === 'editor'" class="h-[calc(100vh-7rem)]">
+        <CanvasEditor :key="editorKey" :initial="editorScene">
+          <template v-if="editorDraft" #actions="{ editor }">
+            <SaveDraftButton :api="draftsApi" :draft="editorDraft" :editor="editor" />
+          </template>
+        </CanvasEditor>
+      </div>
     </template>
   </main>
 </template>

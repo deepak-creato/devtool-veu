@@ -1,4 +1,4 @@
-import type { Draft, DraftList, DraftsApi, Sources } from './types'
+import type { Draft, DraftList, DraftsApi, Sources, ThumbnailUploadUrl } from './types'
 
 export class DraftsApiError extends Error {
   readonly status: number
@@ -16,8 +16,14 @@ export function createDraftsApi(
   getToken: () => string | Promise<string>,
   onUnauthorized?: () => void,
 ): DraftsApi {
-  async function get<T>(path: string): Promise<T> {
-    const res = await fetch(`${baseUrl}${path}`, { headers: { Authorization: `Bearer ${await getToken()}` } })
+  async function request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+    const headers: Record<string, string> = { Authorization: `Bearer ${await getToken()}` }
+    if (init.body !== undefined) headers['Content-Type'] = 'application/json'
+    const res = await fetch(`${baseUrl}${path}`, {
+      method: init.method ?? 'GET',
+      headers,
+      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+    })
     let json: { message?: string; data?: T } | null = null
     try {
       json = await res.json()
@@ -29,11 +35,23 @@ export function createDraftsApi(
     if (!json?.data) throw new DraftsApiError(res.status, 'Empty response')
     return json.data
   }
+  const badId = () => Promise.reject(new DraftsApiError(400, 'Invalid draft id'))
   return {
-    list: () => get<DraftList>('/posts/drafts'),
+    list: () => request<DraftList>('/posts/drafts'),
     get(draftId) {
-      if (!UUID.test(draftId)) return Promise.reject(new DraftsApiError(400, 'Invalid draft id'))
-      return get<Draft>(`/posts/drafts/${draftId}`)
+      if (!UUID.test(draftId)) return badId()
+      return request<Draft>(`/posts/drafts/${draftId}`)
+    },
+    update(draftId, body) {
+      if (!UUID.test(draftId)) return badId()
+      return request<Draft>(`/posts/drafts/${draftId}`, { method: 'PATCH', body })
+    },
+    thumbnailUploadUrl(draftId, mimeType) {
+      if (!UUID.test(draftId)) return badId()
+      return request<ThumbnailUploadUrl>(`/posts/drafts/${draftId}/thumbnail/upload-url`, {
+        method: 'POST',
+        body: { mime_type: mimeType },
+      })
     },
   }
 }

@@ -2,6 +2,7 @@ import type { DeepReadonly } from 'vue'
 import type { Layer, Scene } from '@/features/canvas-editor'
 import { cdnUrl } from './api'
 import { parseCanvasBase, parseEditorState, safeColor } from './editor'
+import { savedScene } from './save'
 import type { Draft } from './types'
 
 /** Draft font keys -> a concrete family the editor can name directly. */
@@ -15,8 +16,13 @@ const FONT_NAMES: Record<string, string> = {
 /** Absolute http(s) URLs pass through; relative paths are prefixed with the draft CDN. */
 const abs = (cdn: string, src: string) => (/^https?:\/\//i.test(src) ? src : (cdnUrl(cdn, src) ?? ''))
 
-/** Convert a draft into an in-memory (pixel) editor scene. Media srcs become absolute CDN URLs. */
+/**
+ * Convert a draft into an in-memory (pixel) editor scene. Media srcs become absolute CDN URLs.
+ * A scene the editor saved earlier is loaded as is, so nothing the editor supports is lost.
+ */
 export function draftToScene(draft: DeepReadonly<Draft>): Scene {
+  const saved = savedScene(draft)
+  if (saved) return saved
   const ed = parseEditorState(draft.editor_state, draft.editor_version)
   const bg = parseCanvasBase(draft.canvas_background)
   const layers: Layer[] = ed.layers.map((l, i) => {

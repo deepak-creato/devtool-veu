@@ -37,6 +37,29 @@ describe('drafts api', () => {
     expect(out).toHaveBeenCalled()
   })
 
+  it('PATCH /posts/drafts/:id sends the JSON body', async () => {
+    const f = mockFetch(200, { status: true, data: { draft_id: ID } })
+    await expect(createDraftsApi('http://x', () => 't').update(ID, { caption: 'hi' })).resolves.toMatchObject({ draft_id: ID })
+    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe(`http://x/posts/drafts/${ID}`)
+    expect(init.method).toBe('PATCH')
+    expect((init.headers as Record<string, string>)['Content-Type']).toBe('application/json')
+    expect(init.body).toBe('{"caption":"hi"}')
+  })
+
+  it('POST thumbnail upload-url; rejects a malformed id without a request', async () => {
+    const data = { upload_url: 'https://s3/put', file_url: `posts/draft-thumbnail/${ID}/a.webp`, expires_in: 3600 }
+    const f = mockFetch(201, { status: true, data })
+    const api = createDraftsApi('http://x', () => 't')
+    await expect(api.thumbnailUploadUrl(ID, 'image/webp')).resolves.toEqual(data)
+    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe(`http://x/posts/drafts/${ID}/thumbnail/upload-url`)
+    expect(init.method).toBe('POST')
+    expect(init.body).toBe('{"mime_type":"image/webp"}')
+    await expect(api.update('../x', {})).rejects.toMatchObject({ status: 400 })
+    expect(f).toHaveBeenCalledTimes(1)
+  })
+
   it('cdn url join and still choice', () => {
     expect(cdnUrl('https://c/', '/a/b.jpg')).toBe('https://c/a/b.jpg')
     expect(cdnUrl('https://c', undefined)).toBeUndefined()
@@ -55,6 +78,8 @@ describe('useDrafts', () => {
         if (id === 'bad') throw new Error('nope')
         return { draft_id: id } as never
       }),
+      update: vi.fn(),
+      thumbnailUploadUrl: vi.fn(),
     }
     const d = useDrafts(api)
     const a = d.open('slow')

@@ -104,6 +104,7 @@ useEventListener(window, 'keydown', (e: KeyboardEvent) => {
         </Button>
       </div>
       <div class="flex-1" />
+      <slot name="actions" :editor="ed" />
       <Button size="sm" variant="outline" @click="json?.open()"><Code />JSON</Button>
     </header>
 

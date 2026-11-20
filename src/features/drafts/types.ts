@@ -58,7 +58,41 @@ export interface Draft {
   story_plan: string
 }
 
+/** PATCH /posts/drafts/:id body. Omitted fields keep their stored value. */
+export interface DraftUpdate {
+  caption?: string
+  canvas_background?: string
+  /** Media already in the draft, in their new order. Only id and layer are accepted. */
+  media?: { id: string; layer?: DraftMedia['layer'] }[]
+  tagged_users?: Draft['tagged_users']
+  /** null or '' clears it */
+  sound_id?: string | null
+  hashtags?: string[]
+  /** null or '' clears it */
+  location_id?: string | null
+  hide_like_count?: boolean
+  moderate_comments?: boolean
+  is_sponsored?: boolean
+  turn_off_all_comments?: boolean
+  editor_state?: string
+  editor_version?: number
+  /** `file_url` from thumbnailUploadUrl, after the image is PUT there */
+  thumbnail_key?: string
+}
+
+export type ThumbnailMimeType = 'image/jpeg' | 'image/png' | 'image/webp'
+
+export interface ThumbnailUploadUrl {
+  upload_url: string
+  /** S3 key; send it as `thumbnail_key` */
+  file_url: string
+  /** seconds */
+  expires_in: number
+}
+
 export interface DraftsApi {
   list(): Promise<DraftList>
   get(draftId: string): Promise<Draft>
+  update(draftId: string, body: DraftUpdate): Promise<Draft>
+  thumbnailUploadUrl(draftId: string, mimeType: ThumbnailMimeType): Promise<ThumbnailUploadUrl>
 }
